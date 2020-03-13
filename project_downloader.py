@@ -13,6 +13,11 @@ import time
 import urllib.request
 
 
+broken = [
+	"libdispatch-187.7", # tarfile appears to be duplicate of 187.5
+]
+
+
 def system(command, check=True, env=None):
 	process = subprocess.run(command, shell=True, capture_output=True, env=env)
 	if check and process.returncode:
@@ -53,8 +58,12 @@ def download_project(project, min_version=None):
 		print("Initializing git repository...")
 		system("git init")
 	for version in versions:
-		print("Adding " + project + "-" + version + "...")
-		file_name = project + "-" + version + ".tar.gz"
+		release = project + "-" + version
+		if release in broken:
+			print(release + " has been marked as broken. Skipping...")
+			continue
+		print("Adding " + release + "...")
+		file_name = release + ".tar.gz"
 		compressed_file = os.path.join(temporary_directory, file_name)
 		url = "https://opensource.apple.com/tarballs/" + project + "/" + file_name
 		urllib.request.urlretrieve(url, compressed_file)
@@ -63,13 +72,13 @@ def download_project(project, min_version=None):
 		tar.extractall(path=temporary_directory)
 		system("git rm -rf .", False)
 		system("git clean -fxd", False)
-		project_directory = os.path.join(temporary_directory, project + "-" + version)
+		project_directory = os.path.join(temporary_directory, release)
 		for file in os.listdir(project_directory):
 			shutil.move(os.path.join(project_directory, file), file)
 		system("git add -A")
 		env = os.environ.copy()
 		env["GIT_AUTHOR_DATE"] = date
-		system("git commit --allow-empty -am '" + project + "-" + version + "' -m 'Imported from " + url + "'", env=env)
+		system("git commit --allow-empty -am '" + release + "' -m 'Imported from " + url + "'", env=env)
 		# Let's be nice
 		time.sleep(1)
 	print("Removing temporary directory")

@@ -37,6 +37,8 @@ def tag_releases(mapping):
 		for release in releases:
 			if release in tags:
 				print(release + " is already tagged, skipping...")
+			elif version not in commits:
+				print("Tagging commit for " + version + " with " + release + " but could not find it. Is it broken? Skipping...")
 			else:
 				print("Tagging " + release + "...")
 				system("git tag " + release + " " + commits[version])
